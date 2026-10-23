@@ -1,0 +1,32 @@
+name: Build APK
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Unzip project
+        run: unzip -q vr_game.zip
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+      - name: Prepare Android project
+        working-directory: vr_game
+        run: |
+          flutter create . --platforms=android --org com.example --project-name vr_game
+          sed -i 's#<application#<uses-permission android:name="android.permission.INTERNET"/>\n    <application#' android/app/src/main/AndroidManifest.xml
+          flutter pub get
+      - name: Build APK
+        working-directory: vr_game
+        run: flutter build apk --release
+      - uses: actions/upload-artifact@v4
+        with:
+          name: vr-game-apk
+          path: vr_game/build/app/outputs/flutter-apk/app-release.apk
